@@ -1,0 +1,1 @@
+"""GDAL integration service."""

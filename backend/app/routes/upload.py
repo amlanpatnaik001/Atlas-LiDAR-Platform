@@ -2,39 +2,33 @@ from pathlib import Path
 import shutil
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
+from app.services.pdal_service import read_metadata
 
-router = APIRouter(prefix="/api", tags=["Upload"])
+router = APIRouter()
 
-BASE_UPLOAD_DIR = Path("storage/uploads")
+UPLOAD_DIR = Path("storage/uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-ALLOWED_EXTENSIONS = {
-    ".las": "las",
-    ".laz": "laz",
-    ".e57": "e57",
-}
 
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
+    ext = Path(file.filename).suffix.lower()
 
-    extension = Path(file.filename).suffix.lower()
+    if ext not in [".las", ".laz", ".e57"]:
+        raise HTTPException(status_code=400, detail="Unsupported file type.")
 
-    if extension not in ALLOWED_EXTENSIONS:
-        raise HTTPException(
-            status_code=400,
-            detail="Unsupported file type"
-        )
-
-    folder = BASE_UPLOAD_DIR / ALLOWED_EXTENSIONS[extension]
-    folder.mkdir(parents=True, exist_ok=True)
-
-    destination = folder / file.filename
+    destination = UPLOAD_DIR / file.filename
 
     with destination.open("wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
+    metadata = None
+
+    if ext in [".las", ".laz"]:
+        metadata = read_metadata(str(destination))
+
     return {
         "filename": file.filename,
-        "size": destination.stat().st_size,
-        "status": "uploaded",
-        "saved_to": str(destination)
+        "status": "validated",
+        "metadata": metadata,
     }

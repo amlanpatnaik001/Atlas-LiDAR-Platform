@@ -3,6 +3,13 @@
 import { useRef, useState } from "react";
 import { Upload, File, CheckCircle2, Loader2 } from "lucide-react";
 
+type LidarMetadata = {
+  point_count: number;
+  srs: string | null;
+  scale: number[];
+  offset: number[];
+};
+
 export default function UploadPage() {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -10,6 +17,7 @@ export default function UploadPage() {
   const [status, setStatus] = useState("");
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [metadata, setMetadata] = useState<LidarMetadata | null>(null);
 
   const handleFile = (selected: File | null) => {
     if (!selected) return;
@@ -22,6 +30,7 @@ export default function UploadPage() {
     }
 
     setStatus("");
+    setMetadata(null);
     setFile(selected);
   };
 
@@ -35,7 +44,7 @@ export default function UploadPage() {
     formData.append("file", file);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/upload", {
+      const response = await fetch("http://127.0.0.1:8000/upload", {
         method: "POST",
         body: formData,
       });
@@ -44,10 +53,12 @@ export default function UploadPage() {
 
       if (response.ok) {
         setStatus(`Uploaded successfully: ${data.filename}`);
+        setMetadata(data.metadata);
       } else {
         setStatus(data.detail || "Upload failed.");
       }
-    } catch {
+    } catch (error) {
+      console.error(error);
       setStatus("Backend connection failed.");
     } finally {
       setUploading(false);
@@ -70,7 +81,7 @@ export default function UploadPage() {
             </p>
           </div>
 
-          {/* REAL DROP ZONE */}
+          {/* DROP ZONE */}
           <div
             onClick={() => inputRef.current?.click()}
             onDragEnter={(e) => {
@@ -79,17 +90,14 @@ export default function UploadPage() {
             }}
             onDragOver={(e) => {
               e.preventDefault();
-              e.stopPropagation();
               setDragActive(true);
             }}
             onDragLeave={(e) => {
               e.preventDefault();
-              e.stopPropagation();
               setDragActive(false);
             }}
             onDrop={(e) => {
               e.preventDefault();
-              e.stopPropagation();
               setDragActive(false);
               handleFile(e.dataTransfer.files[0] || null);
             }}
@@ -120,6 +128,7 @@ export default function UploadPage() {
             />
           </div>
 
+          {/* FILE CARD */}
           {file && (
             <div className="mt-5 flex items-center justify-between rounded-xl border border-slate-800 bg-[#091936] p-4">
               <div className="flex items-center gap-3">
@@ -142,6 +151,7 @@ export default function UploadPage() {
             </div>
           )}
 
+          {/* UPLOAD BUTTON */}
           <button
             onClick={uploadFile}
             disabled={!file || uploading}
@@ -160,14 +170,78 @@ export default function UploadPage() {
             )}
           </button>
 
+          {/* STATUS */}
           {status && (
             <div className="mt-5 flex items-center gap-2 rounded-xl border border-slate-800 bg-[#091936] p-4">
               <CheckCircle2 className="h-5 w-5 text-blue-400" />
               <span>{status}</span>
             </div>
           )}
+
+          {/* METADATA CARD */}
+          {metadata && (
+            <div className="mt-5 rounded-2xl border border-slate-800 bg-[#091936] p-5">
+              <div className="mb-5 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">LiDAR Validation</h3>
+                  <p className="text-sm text-slate-400">
+                    Metadata extracted successfully.
+                  </p>
+                </div>
+
+                <span className="rounded-full bg-emerald-900/30 px-3 py-1 text-sm text-emerald-400">
+                  Validated
+                </span>
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-400">
+                    Point Count
+                  </p>
+                  <p className="mt-1 text-2xl font-bold">
+                    {metadata.point_count?.toLocaleString() || "N/A"}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-400">
+                    Coordinate System
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-slate-200">
+                    {metadata.srs?.includes("32611")
+                      ? "WGS 84 / UTM Zone 11N (EPSG:32611)"
+                      : metadata.srs?.includes("4326")
+                      ? "WGS 84 (EPSG:4326)"
+                      : "Unknown CRS"}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-400">
+                    Scale
+                  </p>
+                  <p className="mt-1 font-medium">
+                    {metadata.scale?.join(" × ") || "N/A"}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-400">
+                    Offset
+                  </p>
+                  <p className="mt-1 font-medium">
+                    {metadata.offset
+                      ?.map((v) => v.toFixed(2))
+                      .join(" • ") || "N/A"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* STEPS */}
         <div className="mt-5 grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl border border-slate-800 bg-[#071633] p-5">
             <p className="text-xs tracking-wider text-blue-400">STEP 1</p>

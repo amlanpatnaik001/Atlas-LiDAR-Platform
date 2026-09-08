@@ -2,3 +2,23 @@ node_modules/
 .next/
 .env
 .env.local
+backend/storage/uploads/*
+# Uploaded LiDAR files
+backend/storage/uploads/**
+
+# Keep the folder structure
+!backend/storage/uploads/
+!backend/storage/uploads/.gitkeep
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Uploaded LiDAR files
+backend/storage/uploads/**
+!backend/storage/uploads/
+!backend/storage/uploads/.gitkeep

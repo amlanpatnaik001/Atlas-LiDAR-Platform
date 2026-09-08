@@ -1,16 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Upload,
-  File,
-  CheckCircle2,
-} from "lucide-react";
+import { useRef, useState } from "react";
+import { Upload, File, CheckCircle2, Loader2 } from "lucide-react";
 
 export default function UploadPage() {
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+
+  const handleFile = (selected: File | null) => {
+    if (!selected) return;
+
+    const ext = selected.name.split(".").pop()?.toLowerCase();
+
+    if (!["las", "laz", "e57"].includes(ext || "")) {
+      setStatus("Only LAS, LAZ and E57 files are supported.");
+      return;
+    }
+
+    setStatus("");
+    setFile(selected);
+  };
 
   const uploadFile = async () => {
     if (!file) return;
@@ -34,8 +47,7 @@ export default function UploadPage() {
       } else {
         setStatus(data.detail || "Upload failed.");
       }
-    } catch (error) {
-      console.error(error);
+    } catch {
       setStatus("Backend connection failed.");
     } finally {
       setUploading(false);
@@ -51,17 +63,41 @@ export default function UploadPage() {
         </p>
 
         <div className="mt-8 rounded-3xl border border-slate-800 bg-[#071633] p-5">
-
           <div className="mb-5">
-            <h2 className="font-semibold text-white">Dataset Intake</h2>
+            <h2 className="font-semibold">Dataset Intake</h2>
             <p className="text-sm text-slate-400">
               Upload LAS, LAZ or E57 datasets for validation and processing.
             </p>
           </div>
 
-          <label
-            htmlFor="lidar-file"
-            className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-[#04112C] px-6 py-16 transition hover:border-blue-500 hover:bg-[#06173A]"
+          {/* REAL DROP ZONE */}
+          <div
+            onClick={() => inputRef.current?.click()}
+            onDragEnter={(e) => {
+              e.preventDefault();
+              setDragActive(true);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setDragActive(true);
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setDragActive(false);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setDragActive(false);
+              handleFile(e.dataTransfer.files[0] || null);
+            }}
+            className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-16 transition-all duration-300 ${
+              dragActive
+                ? "border-blue-400 bg-[#0A234F] shadow-[0_0_30px_rgba(59,130,246,.25)]"
+                : "border-slate-700 bg-[#04112C] hover:border-blue-500 hover:bg-[#06173A]"
+            }`}
           >
             <div className="rounded-2xl bg-[#0A234F] p-4">
               <Upload className="h-8 w-8 text-blue-300" />
@@ -76,17 +112,16 @@ export default function UploadPage() {
             </p>
 
             <input
-              id="lidar-file"
+              ref={inputRef}
               type="file"
               accept=".las,.laz,.e57"
               className="hidden"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              onChange={(e) => handleFile(e.target.files?.[0] || null)}
             />
-          </label>
+          </div>
 
           {file && (
             <div className="mt-5 flex items-center justify-between rounded-xl border border-slate-800 bg-[#091936] p-4">
-
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-emerald-900/30 p-2">
                   <File className="h-5 w-5 text-emerald-400" />
@@ -95,13 +130,14 @@ export default function UploadPage() {
                 <div>
                   <p className="font-medium">{file.name}</p>
                   <p className="text-sm text-slate-400">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                    {(file.size / 1024 / 1024).toFixed(2)} MB •{" "}
+                    {file.name.split(".").pop()?.toUpperCase()}
                   </p>
                 </div>
               </div>
 
               <span className="rounded-full bg-emerald-900/30 px-3 py-1 text-sm text-emerald-400">
-                Ready for Upload
+                Ready
               </span>
             </div>
           )}
@@ -109,9 +145,19 @@ export default function UploadPage() {
           <button
             onClick={uploadFile}
             disabled={!file || uploading}
-            className="mt-5 w-full rounded-xl bg-blue-600 px-5 py-3 font-semibold transition hover:bg-blue-500 disabled:bg-slate-700"
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold transition hover:bg-blue-500 disabled:bg-slate-700"
           >
-            {uploading ? "Uploading..." : "Upload Dataset"}
+            {uploading ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <Upload className="h-5 w-5" />
+                Upload Dataset
+              </>
+            )}
           </button>
 
           {status && (
@@ -123,7 +169,6 @@ export default function UploadPage() {
         </div>
 
         <div className="mt-5 grid gap-4 md:grid-cols-3">
-
           <div className="rounded-2xl border border-slate-800 bg-[#071633] p-5">
             <p className="text-xs tracking-wider text-blue-400">STEP 1</p>
             <h3 className="mt-3 text-xl font-semibold">Upload</h3>
@@ -147,7 +192,6 @@ export default function UploadPage() {
               Run PDAL/GDAL processing pipeline.
             </p>
           </div>
-
         </div>
       </div>
     </main>

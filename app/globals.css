@@ -10,19 +10,42 @@
   --accent: #3b82f6;
 }
 
-* { box-sizing: border-box; }
-html { background: var(--background); }
+* {
+  box-sizing: border-box;
+}
+html {
+  background: var(--background);
+}
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 20% 0%, rgba(59,130,246,.08), transparent 30%),
-    radial-gradient(circle at 90% 10%, rgba(34,211,238,.05), transparent 25%),
+    radial-gradient(
+      circle at 20% 0%,
+      rgba(59, 130, 246, 0.08),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 90% 10%,
+      rgba(34, 211, 238, 0.05),
+      transparent 25%
+    ),
     var(--background);
   color: var(--text);
   font-family: Arial, Helvetica, sans-serif;
 }
-button, input { font: inherit; }
-::selection { background: rgba(59,130,246,.25); }
+button,
+input {
+  font: inherit;
+}
+::selection {
+  background: rgba(59, 130, 246, 0.25);
+}
 
-.scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
-.scrollbar::-webkit-scrollbar-thumb { background: #233149; border-radius: 999px; }
+.scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scrollbar::-webkit-scrollbar-thumb {
+  background: #233149;
+  border-radius: 999px;
+}
